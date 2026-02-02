@@ -1,0 +1,115 @@
+# OSX
+#
+.DS_Store
+
+# Xcode
+#
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+**/.xcode.env.local
+.bitbucket_app_password
+
+# Android/IntelliJ
+#
+build/
+.idea
+.gradle
+local.properties
+*.iml
+*.hprof
+.cxx/
+*.keystore
+!debug.keystore
+.kotlin/
+
+# node.js
+#
+node_modules/
+npm-debug.log
+yarn-error.log
+metro-cache/
+
+# fastlane
+#
+# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
+# screenshots whenever they are needed.
+# For more information about the recommended setup visit:
+# https://docs.fastlane.tools/best-practices/source-control/
+
+**/fastlane/report.xml
+**/fastlane/build**
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+**/ios/*.zip
+
+# Bundle artifact
+*.jsbundle
+ios/output
+
+# Ruby / CocoaPods
+**/Pods/
+/vendor/bundle/
+.ruby-version
+
+# Temporary files created by Metro to check the health of the file watcher
+.metro-health-check*
+
+# testing
+/coverage
+
+# lint
+.eslintcache
+
+# Envs
+.env
+.env.*
+!.env.example
+
+# Ignore all files in the Configs directory
+ios/ProCreditMBA/Configs/*
+/ios/GoogleService-Info.plist
+/android/procreditmba-service-account.json
+
+!ios/ProCreditMBA/Configs/README.md
+!ios/ProCreditMBA/Configs/app_config.json
+!ios/ProCreditMBA/Configs/mc_config.json
+
+
+.vscode/
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.yarn-cache
+
+# Ignore Lefthook configuration
+lefthook.yml
+
+# Ignore Husky prepare-commit-msg hook
+.husky/prepare-commit-msg
+
+# AppStore
+*.mobileprovision
+*.cer
+*.p8
+*.p12
+*.certSigningRequest
