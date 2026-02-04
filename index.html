@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width,initial-scale=1"/>
-	<title>Катя + Богдан — 20.06.2026</title>
+	<title>Катя+Богдан - 20.06.2026</title>
 	<meta name="description" content="Свадебное приглашение: Катя + Богдан — 20.06.2026"/>
 	
 	<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,6 +42,8 @@
 				<a class="cta" href="#invite">Открыть приглашение</a>
 			</div>
 			
+			<canvas class="canvas canvas--mobile"></canvas>
+			
 			<div class="hero-marquee" aria-hidden="true">
 				<div class="marquee">
 					<div class="marquee-track">
@@ -77,10 +79,8 @@
 		
 		<!-- INVITE -->
 		<section class="section parallax-section" id="invite" data-parallax="0.14">
-			<div class="p-orn p-orn--3 parallax-item" data-parallax-y="-60" data-parallax-x="-22"
-			     data-parallax-scale="1.05"></div>
-			<div class="p-orn p-orn--4 parallax-item" data-parallax-y="45" data-parallax-x="16"
-			     data-parallax-scale="1.03"></div>
+			<div class="bouquet bq-left" data-reveal data-anim="fade-up" data-delay="120"></div>
+			<div class="bouquet bq-right" data-reveal data-anim="fade-up" data-delay="220"></div>
 			
 			<div class="container" data-reveal data-anim="fade-up">
 				<h2>Дорогие гости!</h2>
@@ -131,6 +131,10 @@
 		
 		<!-- DETAILS -->
 		<section class="section parallax-section" id="details" data-parallax="0.16">
+			<div class="p-orn p-orn--3 parallax-item" data-parallax-y="-60" data-parallax-x="-22"
+			     data-parallax-scale="1.05"></div>
+			<div class="p-orn p-orn--4 parallax-item" data-parallax-y="45" data-parallax-x="16"
+			     data-parallax-scale="1.03"></div>
 			<div class="container" style="text-align:center">
 				<h2>Тайминг</h2>
 				
@@ -171,6 +175,9 @@
 		
 		<!-- LOCATION -->
 		<section class="section parallax-section" id="location" data-parallax="0.12">
+			<div class="p-orn p-orn--4 parallax-item" data-parallax-y="-60" data-parallax-x="-22"
+			     data-parallax-scale="1.05"></div>
+			
 			<div class="container" style="text-align:center" data-reveal data-anim="fade-up">
 				<h2>Локация</h2>
 				<p class="lead" data-reveal data-anim="fade-up" data-delay="100">
@@ -205,6 +212,8 @@
 		
 		<!-- RSVP -->
 		<section class="section parallax-section" id="confirmation" data-parallax="0.12">
+			<div class="p-orn p-orn--3 parallax-item" data-parallax-y="45" data-parallax-x="16"
+			     data-parallax-scale="1.03"></div>
 			<div class="container rsvp-wrap" data-reveal data-anim="fade-up">
 				<h2>Будем рады видеть вас!</h2>
 				
@@ -239,7 +248,7 @@
 							
 							<label data-reveal data-anim="fade-up" data-delay="500">
 								Кол-во гостей
-								<input name="guests" type="number" min="1" max="10" value="1" required/>
+								<input name="guests" type="number" min="1" max="10" placeholder="1" required/>
 							</label>
 						</div>
 						
@@ -295,12 +304,10 @@
 						</div>
 					</form>
 				</div>
-			
 			</div>
 		</section>
+		<a id="toTopLink" class="link to-top" href="#top">Наверх ↑</a>
 		
-		
-		<a class="link to-top" href="#top">Наверх ↑</a>
 		
 		<canvas class="canvas left"></canvas>
 		<canvas class="canvas"></canvas>

@@ -117,7 +117,7 @@ function setupRSVP() {
 
 
     try {
-      const res = await fetch('', {
+      const res = await fetch(SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(data),
@@ -136,6 +136,45 @@ function setupRSVP() {
       console.error(err);
     }
   });
+}
+
+function setupToTopOnConfirmation() {
+  const link = document.getElementById("toTopLink");
+  const section = document.getElementById("confirmation");
+  if (!link || !section) return;
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const show = () => {
+    link.classList.add("is-visible");
+    link.setAttribute("aria-hidden", "false");
+  };
+
+  const hide = () => {
+    link.classList.remove("is-visible");
+    link.setAttribute("aria-hidden", "true");
+  };
+
+  if (reduce) {
+    // Still respect the same logic, just no animation needed (CSS handles it anyway)
+  }
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      const e = entries[0];
+      if (e.isIntersecting) show();
+      else hide();
+    },
+    {
+      // “start” of section: triggers when its top crosses into the viewport
+      root: null,
+      threshold: 0,
+      rootMargin: "0px 0px -99% 0px",
+    }
+  );
+
+  io.observe(section);
+  hide();
 }
 
 // ===== REVEAL on scroll =====
@@ -402,6 +441,373 @@ function setupCanvas() {
   resizeAll();
 }
 
+function setupCanvasResponsive() {
+  const mq = window.matchMedia("(min-width: 1200px)");
+
+  let cleanup = null;
+
+  const apply = () => {
+    if (cleanup) cleanup();
+
+    if (mq.matches) {
+      cleanup = setupCanvasDesktop();   // твой старый setupCanvas, только возвращает cleanup
+    } else {
+      cleanup = setupCanvasMobileHero(); // новый моб. режим
+    }
+  };
+
+  mq.addEventListener?.("change", apply);
+  apply();
+
+  // на всякий: если нужно снять слушатели при SPA — можно вернуть cleanup
+}
+
+function setupCanvasDesktop() {
+  const canvases = Array.from(document.querySelectorAll("canvas.canvas:not(.canvas--mobile)"));
+  if (!canvases.length) return () => {};
+
+  const ctxs = canvases.map(c => c.getContext("2d")).filter(Boolean);
+
+  let points = [];
+  let segLengths = [];
+  let totalLength = 0;
+  let raf = null;
+
+  function cubicBezier(p0, p1, p2, p3, t) {
+    const mt = 1 - t;
+    const mt2 = mt * mt, t2 = t * t;
+    return {
+      x: (mt2 * mt) * p0.x + (3 * mt2 * t) * p1.x + (3 * mt * t2) * p2.x + (t2 * t) * p3.x,
+      y: (mt2 * mt) * p0.y + (3 * mt2 * t) * p1.y + (3 * mt * t2) * p2.y + (t2 * t) * p3.y,
+    };
+  }
+
+  function reflect(p, c) {
+    return { x: 2 * p.x - c.x, y: 2 * p.y - c.y };
+  }
+
+  function buildPathPoints(w, h) {
+    const s = Math.min(w, h);
+
+    const rightExit = s * 0.22;
+    const spread = s * 0.10;
+    const skew = s * 0.02;
+    const loopW = s * 0.14;
+    const bottomY = h * 0.993;
+    const margin = 16;
+    const topY = -h * 0.16;
+    const crossY = h * 0.36;
+
+    let x = w * 0.9;
+    x = Math.max(margin + loopW * 0.9, Math.min(w - margin - loopW * 1.2, x));
+
+    const A = { x: x + spread * 0.2, y: topY };
+    const D = { x: x + spread * 0.4 + rightExit, y: topY - h * 0.02 };
+    const X = { x: x, y: crossY };
+    const B = { x: x + skew, y: bottomY };
+
+    const c1_1 = { x: x - loopW * 0.22, y: h * 0.05 };
+    const c2_1 = { x: x - loopW * 0.22, y: crossY - h * 0.24 };
+
+    const c1_2 = reflect(X, c2_1);
+    const c2_2 = { x: x + loopW * 1.35, y: B.y - h * 0.06 };
+
+    const c1_3 = reflect(B, c2_2);
+    const c2_3 = { x: x - loopW * 1.20, y: crossY + h * 0.24 };
+
+    const c1_4 = reflect(X, c2_3);
+    const c2_4 = { x: D.x - loopW * 0.80, y: h * 0.07 };
+
+    const segs = [
+      [A, c1_1, c2_1, X],
+      [X, c1_2, c2_2, B],
+      [B, c1_3, c2_3, X],
+      [X, c1_4, c2_4, D],
+    ];
+
+    points = [];
+    const STEPS = 140;
+
+    for (let si = 0; si < segs.length; si++) {
+      const [p0, p1, p2, p3] = segs[si];
+      for (let i = 0; i <= STEPS; i++) {
+        if (si > 0 && i === 0) continue;
+        points.push(cubicBezier(p0, p1, p2, p3, i / STEPS));
+      }
+    }
+
+    segLengths = [];
+    totalLength = 0;
+    for (let i = 1; i < points.length; i++) {
+      const l = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      segLengths.push(l);
+      totalLength += l;
+    }
+  }
+
+  function drawPartial(ctx, w, h, targetLen) {
+    ctx.clearRect(0, 0, w, h);
+    if (!points.length) return;
+
+    ctx.strokeStyle = "rgba(200, 183, 165, 0.75)";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    let acc = 0;
+    for (let i = 1; i < points.length; i++) {
+      const segLen = segLengths[i - 1];
+      if (acc + segLen <= targetLen) {
+        ctx.lineTo(points[i].x, points[i].y);
+        acc += segLen;
+      } else {
+        const t = segLen ? (targetLen - acc) / segLen : 0;
+        ctx.lineTo(
+          points[i - 1].x + (points[i].x - points[i - 1].x) * t,
+          points[i - 1].y + (points[i].y - points[i - 1].y) * t
+        );
+        break;
+      }
+    }
+    ctx.stroke();
+  }
+
+  function drawAllByScroll() {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = null;
+
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = maxScroll > 0 ? window.scrollY / maxScroll : 1;
+      const len = Math.max(0, Math.min(1, progress)) * totalLength;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      for (const ctx of ctxs) drawPartial(ctx, w, h, len);
+    });
+  }
+
+  function resizeAll() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    for (const canvas of canvases) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+    }
+
+    for (const ctx of ctxs) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    buildPathPoints(w, h);
+    drawAllByScroll();
+  }
+
+  window.addEventListener("scroll", drawAllByScroll, { passive: true });
+  window.addEventListener("resize", resizeAll);
+  resizeAll();
+
+  return () => {
+    window.removeEventListener("scroll", drawAllByScroll);
+    window.removeEventListener("resize", resizeAll);
+  };
+}
+
+/* ===== MOBILE: canvas только в HERO, рисуем "сразу", когда HERO видим ===== */
+function setupCanvasMobileHero() {
+  const canvas = document.querySelector("canvas.canvas--mobile");
+  const hero = document.getElementById("top");
+  if (!canvas || !hero) return () => {};
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return () => {};
+
+  let points = [];
+  let segLengths = [];
+  let totalLength = 0;
+
+  let raf = 0;
+  let w = 1, h = 1;
+  let dpr = 1;
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function cubicBezier(p0, p1, p2, p3, t) {
+    const mt = 1 - t;
+    const mt2 = mt * mt, t2 = t * t;
+    return {
+      x: (mt2 * mt) * p0.x + (3 * mt2 * t) * p1.x + (3 * mt * t2) * p2.x + (t2 * t) * p3.x,
+      y: (mt2 * mt) * p0.y + (3 * mt2 * t) * p1.y + (3 * mt * t2) * p2.y + (t2 * t) * p3.y,
+    };
+  }
+
+  function reflect(p, c) { return { x: 2 * p.x - c.x, y: 2 * p.y - c.y }; }
+
+  function buildPathPoints(W, H) {
+    // строим ПОД “вертикальный” путь (как раньше), но потом повернём ctx
+    const s = w
+
+    const rightExit = s * 0.2;
+    const spread = s * 0.10;
+    const skew = s * 0.02;
+    const loopW = s * 0.14;
+    const bottomY = H * 0.993;
+    const margin = 16;
+    const topY = -H * 0.16;
+    const crossY = H * 0.36;
+
+    let x = W * 1.2
+    x = Math.max(margin + loopW * 0.99, Math.min(W - margin - loopW * 1.2, x));
+
+    const A = { x: x + spread * 0.2, y: topY };
+    const D = { x: x + spread * 0.4 + rightExit, y: topY - H * 0.02 };
+    const X = { x: x, y: crossY };
+    const B = { x: x + skew, y: bottomY };
+
+    const c1_1 = { x: x - loopW * 0.22, y: H * 0.05 };
+    const c2_1 = { x: x - loopW * 0.22, y: crossY - H * 0.24 };
+
+    const c1_2 = reflect(X, c2_1);
+    const c2_2 = { x: x + loopW * 1.4, y: B.y - H * 0.06 };
+
+    const c1_3 = reflect(B, c2_2);
+    const c2_3 = { x: x - loopW * 1.20, y: crossY + H * 0.24 };
+
+    const c1_4 = reflect(X, c2_3);
+    const c2_4 = { x: D.x - loopW * 0.80, y: H * 0.07 };
+
+    const segs = [
+      [A, c1_1, c2_1, X],
+      [X, c1_2, c2_2, B],
+      [B, c1_3, c2_3, X],
+      [X, c1_4, c2_4, D],
+    ];
+
+    points = [];
+    const STEPS = 120;
+    for (let si = 0; si < segs.length; si++) {
+      const [p0, p1, p2, p3] = segs[si];
+      for (let i = 0; i <= STEPS; i++) {
+        if (si > 0 && i === 0) continue;
+        points.push(cubicBezier(p0, p1, p2, p3, i / STEPS));
+      }
+    }
+
+    segLengths = [];
+    totalLength = 0;
+    for (let i = 1; i < points.length; i++) {
+      const l = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      segLengths.push(l);
+      totalLength += l;
+    }
+  }
+
+  function drawPartial(targetLen) {
+    ctx.clearRect(0, 0, w, h);
+    if (!points.length) return;
+
+    ctx.save();
+
+    // ПОВОРОТ ВНУТРИ КАНВАСА (а не CSS):
+    // хотим горизонтально -> вращаем -90deg вокруг (0,0) и сдвигаем
+    // После rotate(-90) ось Y становится “вправо”, поэтому переводим по X на -h
+    ctx.translate(0, h);
+    ctx.rotate(-Math.PI / 2);
+
+    ctx.strokeStyle = "rgba(200, 183, 165, 0.75)";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    let acc = 0;
+    for (let i = 1; i < points.length; i++) {
+      const segLen = segLengths[i - 1];
+      if (acc + segLen <= targetLen) {
+        ctx.lineTo(points[i].x, points[i].y);
+        acc += segLen;
+      } else {
+        const t = segLen ? (targetLen - acc) / segLen : 0;
+        ctx.lineTo(
+          points[i - 1].x + (points[i].x - points[i - 1].x) * t,
+          points[i - 1].y + (points[i].y - points[i - 1].y) * t
+        );
+        break;
+      }
+    }
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function getHeroProgress() {
+    const rect = hero.getBoundingClientRect();
+    const vh = window.innerHeight || 800;
+
+    // когда hero полностью “пройден” (вышел вверх) -> 1
+    // когда hero ещё не начался -> 0
+    const total = rect.height + vh;
+    const passed = vh - rect.top; // сколько “прошло” от момента, когда top вошёл снизу
+    const p = total > 0 ? passed / total : 1;
+
+    // чтобы было видно сразу при загрузке (если hero в видимости)
+    const visible = rect.bottom > 0 && rect.top < vh;
+    const BASE = visible ? 0.18 : 0;
+
+    return clamp(Math.max(BASE, p), 0, 1);
+  }
+
+  function update() {
+    raf = 0;
+    const p = getHeroProgress();
+    drawPartial(totalLength * p);
+  }
+
+  function onScroll() {
+    if (raf) return;
+    raf = requestAnimationFrame(update);
+  }
+
+  function resizeToHero() {
+    dpr = window.devicePixelRatio || 1;
+    const r = hero.getBoundingClientRect();
+    w = Math.max(1, Math.round(r.width));
+    h = Math.max(1, Math.round(r.height));
+
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Внимание: после поворота рисуем в координатах (H x W),
+    // поэтому путь строим как будто “вертикально” в (h,w)
+    buildPathPoints(h, w);
+
+    update();
+  }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", resizeToHero);
+
+  resizeToHero();
+  requestAnimationFrame(update);
+
+  return () => {
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("resize", resizeToHero);
+    if (raf) cancelAnimationFrame(raf);
+  };
+}
+
 
 // ===== init =====
 startCountdownAll();
@@ -409,4 +815,6 @@ renderCalendar();
 setupRSVP();
 setupReveal();
 setupParallax();
-setupCanvas();
+setupToTopOnConfirmation();
+setupCanvasResponsive();
+
