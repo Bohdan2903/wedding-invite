@@ -575,19 +575,13 @@ button {
     color: var(--fg);
 }
 
-/* --- Footer --- */
-.footer {
-    border-top: 1px solid var(--line);
-    padding: 22px 0;
-    color: var(--muted);
-}
 
-.footer-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+
+.link.to-top{
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10;
 }
 
 /* --- Parallax --- */

@@ -236,22 +236,13 @@ function setupParallax() {
 function setupCanvas() {
   const canvas = document.getElementById("symbolCanvas");
   const ctx = canvas.getContext("2d");
+
   let points = [];
   let segLengths = [];
   let totalLength = 0;
+  let raf = null;
 
-  function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    // Используем только часть ширины, если нужно, но здесь на весь вьюпорт
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = window.innerWidth + "px";
-    canvas.style.height = window.innerHeight + "px";
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    buildPathPoints();
-    drawByScroll();
-  }
+  const STEPS_PER_SEG = 70;
 
   function cubicBezier(p0, p1, p2, p3, t) {
     const mt = 1 - t;
@@ -262,51 +253,95 @@ function setupCanvas() {
     };
   }
 
+  function reflect(p, c) {
+    return { x: 2 * p.x - c.x, y: 2 * p.y - c.y };
+  }
+
+  // Catmull-Rom spline -> chain of cubic beziers (smooth, no sharp corners)
+  function catmullRomToBeziers(P, tension = 0.55) {
+    const segs = [];
+    for (let i = 0; i < P.length - 1; i++) {
+      const p0 = P[i - 1] || P[i];
+      const p1 = P[i];
+      const p2 = P[i + 1];
+      const p3 = P[i + 2] || P[i + 1];
+
+      const c1 = {
+        x: p1.x + (p2.x - p0.x) * (tension / 6),
+        y: p1.y + (p2.y - p0.y) * (tension / 6),
+      };
+      const c2 = {
+        x: p2.x - (p3.x - p1.x) * (tension / 6),
+        y: p2.y - (p3.y - p1.y) * (tension / 6),
+      };
+
+      segs.push([p1, c1, c2, p2]);
+    }
+    return segs;
+  }
+
   function buildPathPoints() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const s = Math.min(vw, vh);
 
-    // Основная вертикальная ось (справа)
-    const xBase = vw * 0.85;
-    // Ширина петли
-    const loopWidth = vw * 0.25;
+    const topSlant = s * 0.14;
+    const rightExit = s * 0.22;  // насколько правая нить уходит вправо в конце (0.14–0.30)
+
+    const spread = s * 0.10;    // расстояние между верхними “нитями”
+    const skew = s * 0.02;    // лёгкий сдвиг капли вправо
+    const loopW = s * 0.11;      // было 0.14 (уже капля)
+    const bottomY = vh * 0.997;
+    const margin = 16;
+    const topY = -vh * 0.16;
+    const crossY = vh * 0.36;
+
+    let x = vw * 0.9;       // правее
+    // позиция символа по X (как у тебя справа, но не даём уйти за край)
+    x = Math.max(margin + loopW * 0.9, Math.min(vw - margin - loopW * 1.2, x));
+
+
+    // точки
+    const A = { x: x + spread * 0.2, y: topY };                 // верх слева
+    const D = { x: x + spread * 0.4 + rightExit, y: topY - vh * 0.02 }; // конец сверху уходит вправо
+    const X = { x: x, y: crossY };
+    const B = { x: x + skew, y: bottomY };
+
+// 1) A -> X (левая нить сверху вниз) — делаем плавный загиб как в рефе
+    const c1_1 = { x: D.x - topSlant * 0.8, y: vh * 0.05 };
+    const c2_1 = { x: x - loopW * 0.22,     y: crossY - vh * 0.24 };
+
+// 2) X -> B
+    const c1_2 = reflect(X, c2_1);
+    const c2_2 = { x: x + loopW * 1.05, y: B.y + vh * 0.01 };
+
+// 3) B -> X — левая сторона петли (меньше влево, чуть глубже вниз)
+
+    const c1_3 = reflect(B, c2_2);
+    const c2_3 = { x: x - loopW * 0.65, y: crossY + vh * 0.28 };
+
+// 4) X -> D (правая нить вверх) — уводим вправо на выходе
+    const c1_4 = reflect(X, c2_3);
+    const c2_4 = { x: D.x - topSlant * 0.8, y: vh * 0.1 }; // касательная направлена к D вправо
 
     const segs = [
-      // 1. НАЧАЛО: Практически прямая вертикальная линия ("Школа")
-      // Контрольные точки выстроены в линию, чтобы изгиб был едва заметен
-      [
-        { x: xBase - loopWidth * 0.2, y: -vh * 0.1 },
-        { x: xBase - 15, y: vh * 0.2 },
-        { x: xBase, y: vh * 0.4 },
-        { x: xBase, y: vh * 0.5 } // Легкое отклонение перед началом петли
-      ],
-      // 2. ПЕРЕХОД: Плавный уход вправо и глубокий "нырок" вниз
-      [
-        { x: xBase + loopWidth * 0.2, y: vh * 0.65 },
-        { x: xBase + loopWidth * 0.3, y: vh * 0.7 },
-        { x: xBase + loopWidth * 0.8, y: vh * 0.82 }, // Самая правая нижняя точка (за краем)
-        { x: xBase + loopWidth * 0.1, y: vh * 0.92 } // Возврат к центру
-      ],
-      // 3. ПЕТЛЯ (∞): Резкий разворот влево и перехлест вверх
-      // Эта часть создает тот самый каллиграфический узел
-      [
-        { x: xBase + loopWidth * 0.1, y: vh * 0.92 },
-        { x: xBase - loopWidth * 0.6, y: vh * 0.82 }, // Левое "ушко" петли
-        { x: xBase - loopWidth * 0.2, y: vh * 0.7 }, // Точка перехлеста (на стержне)
-        { x: xBase + loopWidth * 0.6, y: vh * 0.25 }  // Финальный взмах вправо-вверх
-      ]
+      [A, c1_1, c2_1, X],
+      [X, c1_2, c2_2, B],
+      [B, c1_3, c2_3, X],
+      [X, c1_4, c2_4, D],
     ];
 
     points = [];
-    const STEPS = 300; // Высокая детализация для плавности
+    const STEPS = 140;
 
-    for (const s of segs) {
+    for (let si = 0; si < segs.length; si++) {
+      const [p0, p1, p2, p3] = segs[si];
       for (let i = 0; i <= STEPS; i++) {
-        points.push(cubicBezier(s[0], s[1], s[2], s[3], i / STEPS));
+        if (si > 0 && i === 0) continue;
+        points.push(cubicBezier(p0, p1, p2, p3, i / STEPS));
       }
     }
 
-    // Расчет длин сегментов (оставляем без изменений)
     segLengths = [];
     totalLength = 0;
     for (let i = 1; i < points.length; i++) {
@@ -316,10 +351,14 @@ function setupCanvas() {
     }
   }
 
+
   function drawPartial(targetLen) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "rgba(200, 183, 165, 0.75)"; // Чуть прозрачнее
-    ctx.lineWidth = 2.4; // Тоньше — значит изящнее
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    if (!points.length) return;
+
+    ctx.strokeStyle = "rgba(200, 183, 165, 0.75)";
+    ctx.lineWidth = 2;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -333,7 +372,7 @@ function setupCanvas() {
         ctx.lineTo(points[i].x, points[i].y);
         acc += segLen;
       } else {
-        const t = (targetLen - acc) / segLen;
+        const t = segLen ? (targetLen - acc) / segLen : 0;
         ctx.lineTo(
           points[i - 1].x + (points[i].x - points[i - 1].x) * t,
           points[i - 1].y + (points[i].y - points[i - 1].y) * t
@@ -344,23 +383,38 @@ function setupCanvas() {
     ctx.stroke();
   }
 
-  let raf = null;
-
   function drawByScroll() {
     if (raf) return;
     raf = requestAnimationFrame(() => {
       raf = null;
-      const scrollY = window.scrollY;
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = Math.max(0, Math.min(1, scrollY / maxScroll));
-      drawPartial(progress * totalLength);
+      const progress = maxScroll > 0 ? window.scrollY / maxScroll : 1;
+      drawPartial(Math.max(0, Math.min(1, progress)) * totalLength);
     });
+  }
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+
+    // рисуем в CSS-пикселях
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    buildPathPoints();
+    drawByScroll();
   }
 
   window.addEventListener("scroll", drawByScroll, { passive: true });
   window.addEventListener("resize", resize);
   resize();
 }
+
 
 // ===== init =====
 startCountdownAll();
