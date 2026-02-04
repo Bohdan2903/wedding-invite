@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const WEDDING_DATE_ISO = "2026-06-20T17:00:00";
-const SCRIPT_URL = ""
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYbtVjtBXhuInQzqzqt-wXs0R424LhNgs1y9D_Fefuz0VZd8qIUQtyCcb_2HuPfTrS/exec"
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
