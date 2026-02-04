@@ -101,10 +101,14 @@ function renderCalendar() {
 // ===== rsvp local =====
 function setupRSVP() {
   const form = document.getElementById("rsvpForm");
+  const button = document.querySelector(".form-submit-btn");
+
   if (!form) return;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    button.setAttribute('disabled', '');
 
     const fd = new FormData(form);
     const data = Object.fromEntries(fd.entries());
@@ -113,7 +117,7 @@ function setupRSVP() {
 
 
     try {
-      const res = await fetch(SCRIPT_URL, {
+      const res = await fetch('', {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(data),
@@ -123,9 +127,12 @@ function setupRSVP() {
       if (!json.ok) throw new Error(json.error || "Unknown error");
 
       alert("Спасибо! Ответ отправлен.");
+      button.removeAttribute('disabled');
+
       form.reset();
     } catch (err) {
       alert("Не удалось отправить. Попробуйте ещё раз.");
+      button.removeAttribute('disabled');
       console.error(err);
     }
   });
@@ -394,7 +401,6 @@ function setupCanvas() {
   window.addEventListener("resize", resizeAll);
   resizeAll();
 }
-
 
 
 // ===== init =====

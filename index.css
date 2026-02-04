@@ -576,8 +576,7 @@ button {
 }
 
 
-
-.link.to-top{
+.link.to-top {
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -770,6 +769,11 @@ input:focus, select:focus, textarea:focus {
     background: var(--fg);
     color: var(--bg);
     border: 1px solid rgba(28, 28, 28, .15);
+    transition: all 0.3s;
+
+    &:disabled {
+        opacity: 0.8;
+    }
 }
 
 .map-card {
@@ -913,7 +917,8 @@ input:focus, select:focus, textarea:focus {
     left: 0;
     pointer-events: none; /* Чтобы можно было кликать сквозь него */
     z-index: 1; /* Или меньше, если нужно за контентом */
-    &.left{
+
+    &.left {
         transform: rotate(180deg);
     }
 }
