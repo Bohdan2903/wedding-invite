@@ -907,10 +907,13 @@ input:focus, select:focus, textarea:focus {
 }
 
 
-#symbolCanvas {
+.canvas {
     position: fixed;
     top: 0;
     left: 0;
     pointer-events: none; /* Чтобы можно было кликать сквозь него */
     z-index: 1; /* Или меньше, если нужно за контентом */
+    &.left{
+        transform: rotate(180deg);
+    }
 }
