@@ -6,52 +6,31 @@ const pad2 = (n) => String(n).padStart(2, "0");
 
 // ===== countdown  =====
 function startCountdownAll() {
-  // поддерживаем и старые id (d/h/m/s), и новые data-ct
-  const targets = {
-    d: [
-      document.getElementById("d"),
-      ...document.querySelectorAll('[data-ct="d"]')
-    ],
-    h: [
-      document.getElementById("h"),
-      ...document.querySelectorAll('[data-ct="h"]')
-    ],
-    m: [
-      document.getElementById("m"),
-      ...document.querySelectorAll('[data-ct="m"]')
-    ],
-    s: [
-      document.getElementById("s"),
-      ...document.querySelectorAll('[data-ct="s"]')
-    ],
-  };
+  const units = ["d", "h", "m", "s"];
+  const targets = {};
+  units.forEach(u => {
+    targets[u] = [document.getElementById(u), ...document.querySelectorAll(`[data-ct="${u}"]`)].filter(Boolean);
+  });
 
-  const target = new Date(WEDDING_DATE_ISO).getTime();
-
-  function setAll(list, value) {
-    for (const el of list) {
-      if (el) el.textContent = value;
-    }
-  }
+  const targetDate = new Date(WEDDING_DATE_ISO).getTime();
 
   function tick() {
-    let diff = Math.max(0, target - Date.now());
+    const now = Date.now();
+    const diff = Math.max(0, targetDate - now);
 
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    diff -= days * (1000 * 60 * 60 * 24);
+    const d = Math.floor(diff / 864e5);
+    const h = Math.floor((diff % 864e5) / 36e5);
+    const m = Math.floor((diff % 36e5) / 6e4);
+    const s = Math.floor((diff % 6e4) / 1000);
 
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    diff -= hours * (1000 * 60 * 60);
-
-    const mins = Math.floor(diff / (1000 * 60));
-    diff -= mins * (1000 * 60);
-
-    const secs = Math.floor(diff / 1000);
-
-    setAll(targets.d, String(days));
-    setAll(targets.h, pad2(hours));
-    setAll(targets.m, pad2(mins));
-    setAll(targets.s, pad2(secs));
+    const values = { d, h: pad2(h), m: pad2(m), s: pad2(s) };
+    units.forEach(u => {
+      targets[u].forEach(el => {
+        if (el.textContent !== String(values[u])) {
+          el.textContent = values[u];
+        }
+      });
+    });
   }
 
   tick();
@@ -103,39 +82,36 @@ function setupRSVP() {
   const form = document.getElementById("rsvpForm");
   const button = document.querySelector(".form-submit-btn");
 
-  if (!form) return;
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      button.disabled = true;
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+      const fd = new FormData(form);
+      const data = Object.fromEntries(fd.entries());
+      data.drinks = fd.getAll("drinks");
+      if (data.guests) data.guests = Number(data.guests);
 
-    button.setAttribute('disabled', '');
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(data),
+        });
 
-    const fd = new FormData(form);
-    const data = Object.fromEntries(fd.entries());
-    data.drinks = fd.getAll("drinks");
-    if (data.guests) data.guests = Number(data.guests);
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || "Unknown error");
 
-
-    try {
-      const res = await fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || "Unknown error");
-
-      alert("Спасибо! Ответ отправлен.");
-      button.removeAttribute('disabled');
-
-      form.reset();
-    } catch (err) {
-      alert("Не удалось отправить. Попробуйте ещё раз.");
-      button.removeAttribute('disabled');
-      console.error(err);
-    }
-  });
+        alert("Спасибо! Ответ отправлен.");
+        form.reset();
+      } catch (err) {
+        alert("Не удалось отправить. Попробуйте ещё раз.");
+        console.error(err);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
 }
 
 function setupToTopOnConfirmation() {
@@ -180,52 +156,28 @@ function setupToTopOnConfirmation() {
 // ===== REVEAL on scroll =====
 function setupReveal() {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let els = Array.from(document.querySelectorAll("[data-reveal]"));
 
-  // Помечаем элементы, которые хотим анимировать
-  const els = Array.from(document.querySelectorAll("[data-reveal]"));
-
-  // Если ничего не отмечено — мягкий fallback как было
   if (!els.length) {
-    const fallback = Array.from(document.querySelectorAll(".container, .hero-inner, .count-cta, .timeline, .dress, .grid-2"));
-    fallback.forEach(el => el.classList.add("reveal"));
-    if (reduce) {
-      fallback.forEach(el => el.classList.add("is-in"));
-      return;
-    }
-
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) e.target.classList.add("is-in");
-      }
-    }, { threshold: 0.12 });
-
-    fallback.forEach(el => io.observe(el));
-    return;
+    els = Array.from(document.querySelectorAll(".container, .hero-inner, .count-cta, .timeline, .dress, .grid-2"));
   }
 
-  // Основной AOS-like режим
   els.forEach(el => {
     el.classList.add("reveal");
     const delay = el.dataset.delay ? `${Number(el.dataset.delay)}ms` : "0ms";
     el.style.setProperty("--reveal-delay", delay);
+    if (reduce) el.classList.add("is-in");
   });
 
-  if (reduce) {
-    els.forEach(el => el.classList.add("is-in"));
-    return;
-  }
+  if (reduce) return;
 
   const io = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-
-      e.target.classList.add("is-in");
-
-      // data-once="true" — анимация только один раз
-      if (e.target.dataset.once !== "false") {
-        io.unobserve(e.target);
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add("is-in");
+        if (e.target.dataset.once !== "false") io.unobserve(e.target);
       }
-    }
+    });
   }, { threshold: 0.12 });
 
   els.forEach(el => io.observe(el));
@@ -238,207 +190,59 @@ function setupParallax() {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduce) return;
 
-  const items = Array.from(document.querySelectorAll(".parallax-item"));
+  const items = Array.from(document.querySelectorAll(".parallax-item")).map(el => ({
+    el,
+    y: Number(el.dataset.parallaxY || 0),
+    x: Number(el.dataset.parallaxX || 0),
+    s: Number(el.dataset.parallaxScale || 1),
+    rect: null,
+    visible: false
+  }));
+
   if (!items.length) return;
 
-  let raf = 0;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const item = items.find(i => i.el === entry.target);
+      if (item) item.visible = entry.isIntersecting;
+    });
+  }, { threshold: 0 });
 
+  items.forEach(item => io.observe(item.el));
+
+  let raf = 0;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   const update = () => {
     raf = 0;
-    const vh = window.innerHeight || 800;
+    const vh = window.innerHeight;
 
-    for (const el of items) {
-      const rect = el.getBoundingClientRect();
+    items.forEach(item => {
+      if (!item.visible) return;
+
+      const rect = item.el.getBoundingClientRect();
       const mid = rect.top + rect.height / 2;
-
-      // прогресс -1..1 относительно центра экрана
       const t = (mid - vh / 2) / (vh / 2);
       const p = clamp(t, -1, 1);
 
-      const y = Number(el.dataset.parallaxY || 0) * p;
-      const x = Number(el.dataset.parallaxX || 0) * p;
-      const s = Number(el.dataset.parallaxScale || 1);
-
-      // чуть усиливаем эффект ближе к центру
+      const y = item.y * p;
+      const x = item.x * p;
       const ease = 1 - Math.abs(p);
-      const scale = 1 + (s - 1) * (0.35 + 0.65 * ease);
+      const scale = 1 + (item.s - 1) * (0.35 + 0.65 * ease);
 
-      el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
-    }
+      item.el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${scale.toFixed(3)})`;
+    });
   };
 
   const onScroll = () => {
-    if (raf) return;
-    raf = requestAnimationFrame(update);
+    if (!raf) raf = requestAnimationFrame(update);
   };
 
   window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll);
+  window.addEventListener("resize", () => {
+    onScroll();
+  }, { passive: true });
   update();
-}
-
-function setupCanvas() {
-  const canvases = Array.from(document.querySelectorAll("canvas"));
-  if (!canvases.length) return;
-
-  const ctxs = canvases
-    .map((c) => c.getContext("2d"))
-    .filter(Boolean);
-
-  let points = [];
-  let segLengths = [];
-  let totalLength = 0;
-  let raf = null;
-
-  function cubicBezier(p0, p1, p2, p3, t) {
-    const mt = 1 - t;
-    const mt2 = mt * mt, t2 = t * t;
-    return {
-      x: (mt2 * mt) * p0.x + (3 * mt2 * t) * p1.x + (3 * mt * t2) * p2.x + (t2 * t) * p3.x,
-      y: (mt2 * mt) * p0.y + (3 * mt2 * t) * p1.y + (3 * mt * t2) * p2.y + (t2 * t) * p3.y,
-    };
-  }
-
-  function reflect(p, c) {
-    return { x: 2 * p.x - c.x, y: 2 * p.y - c.y };
-  }
-
-  function buildPathPoints() {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const s = Math.min(vw, vh);
-
-    const rightExit = s * 0.22;
-    const spread = s * 0.10;
-    const skew = s * 0.02;
-    const loopW = s * 0.14;
-    const bottomY = vh * 0.993;
-    const margin = 16;
-    const topY = -vh * 0.16;
-    const crossY = vh * 0.36;
-
-    let x = vw * 0.9;
-    x = Math.max(margin + loopW * 0.9, Math.min(vw - margin - loopW * 1.2, x));
-
-    const A = { x: x + spread * 0.2, y: topY };
-    const D = { x: x + spread * 0.4 + rightExit, y: topY - vh * 0.02 };
-    const X = { x: x, y: crossY };
-    const B = { x: x + skew, y: bottomY };
-
-    // 1) A -> X
-    const c1_1 = { x: x - loopW * 0.22, y: vh * 0.05 };
-    const c2_1 = { x: x - loopW * 0.22, y: crossY - vh * 0.24 };
-
-    // 2) X -> B (правая часть петли — чуть богаче/шире)
-    const c1_2 = reflect(X, c2_1);
-    const c2_2 = { x: x + loopW * 1.35, y: B.y - vh * 0.06 };
-
-    // 3) B -> X (левая часть петли — шире влево)
-    const c1_3 = reflect(B, c2_2);
-    const c2_3 = { x: x - loopW * 1.20, y: crossY + vh * 0.24 };
-
-    // 4) X -> D (мягче выход)
-    const c1_4 = reflect(X, c2_3);
-    const c2_4 = { x: D.x - loopW * 0.80, y: vh * 0.07 };
-
-    const segs = [
-      [A, c1_1, c2_1, X],
-      [X, c1_2, c2_2, B],
-      [B, c1_3, c2_3, X],
-      [X, c1_4, c2_4, D],
-    ];
-
-    points = [];
-    const STEPS = 140;
-
-    for (let si = 0; si < segs.length; si++) {
-      const [p0, p1, p2, p3] = segs[si];
-      for (let i = 0; i <= STEPS; i++) {
-        if (si > 0 && i === 0) continue;
-        points.push(cubicBezier(p0, p1, p2, p3, i / STEPS));
-      }
-    }
-
-    segLengths = [];
-    totalLength = 0;
-    for (let i = 1; i < points.length; i++) {
-      const l = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
-      segLengths.push(l);
-      totalLength += l;
-    }
-  }
-
-  function drawPartial(ctx, targetLen) {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-
-    ctx.clearRect(0, 0, w, h);
-    if (!points.length) return;
-
-    ctx.strokeStyle = "rgba(200, 183, 165, 0.75)";
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-
-    let acc = 0;
-    for (let i = 1; i < points.length; i++) {
-      const segLen = segLengths[i - 1];
-      if (acc + segLen <= targetLen) {
-        ctx.lineTo(points[i].x, points[i].y);
-        acc += segLen;
-      } else {
-        const t = segLen ? (targetLen - acc) / segLen : 0;
-        ctx.lineTo(
-          points[i - 1].x + (points[i].x - points[i - 1].x) * t,
-          points[i - 1].y + (points[i].y - points[i - 1].y) * t
-        );
-        break;
-      }
-    }
-    ctx.stroke();
-  }
-
-  function drawAllByScroll() {
-    if (raf) return;
-    raf = requestAnimationFrame(() => {
-      raf = null;
-
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = maxScroll > 0 ? window.scrollY / maxScroll : 1;
-      const len = Math.max(0, Math.min(1, progress)) * totalLength;
-
-      for (const ctx of ctxs) drawPartial(ctx, len);
-    });
-  }
-
-  function resizeAll() {
-    const dpr = window.devicePixelRatio || 1;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-
-    for (const canvas of canvases) {
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
-    }
-
-    for (const ctx of ctxs) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    buildPathPoints();
-    drawAllByScroll();
-  }
-
-  window.addEventListener("scroll", drawAllByScroll, { passive: true });
-  window.addEventListener("resize", resizeAll);
-  resizeAll();
 }
 
 function setupCanvasResponsive() {
@@ -634,6 +438,14 @@ function setupCanvasMobileHero() {
   let raf = 0;
   let w = 1, h = 1;
   let dpr = 1;
+  let drawP = 0;        // 0..1 прогресс дорисовки
+  let done = false;     // дорисовано ли
+  let locked = false;   // сейчас блокируем скролл
+  let accPx = 0;        // накопленные "пиксели" жеста
+  let touchY = null;
+  let savedScrollY = 0;
+
+  const DRAW_SCROLL_PX = 420;
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -713,14 +525,15 @@ function setupCanvasMobileHero() {
 
     ctx.save();
 
-    // ПОВОРОТ ВНУТРИ КАНВАСА (а не CSS):
-    // хотим горизонтально -> вращаем -90deg вокруг (0,0) и сдвигаем
-    // После rotate(-90) ось Y становится “вправо”, поэтому переводим по X на -h
     ctx.translate(0, h);
     ctx.rotate(-Math.PI / 2);
 
+    // ⚠️ padding чтобы stroke не резался
+    const pad = Math.ceil((ctx.lineWidth || 4) * 2.5); // под 3-4px хватает
+    ctx.translate(pad, pad);
+
     ctx.strokeStyle = "rgba(200, 183, 165, 0.75)";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;               // можно 3-4
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -747,33 +560,123 @@ function setupCanvasMobileHero() {
     ctx.restore();
   }
 
-  function getHeroProgress() {
+
+  function lockPage() {
+    if (locked || done) return;
+    savedScrollY = window.scrollY || window.pageYOffset || 0;
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${savedScrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+  }
+
+  function unlockPage() {
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+
+    window.scrollTo(0, savedScrollY);
+  }
+
+
+  function lockScroll() {
+    if (locked || done) return;
+    locked = true;
+
+    lockPage();
+
+    document.documentElement.style.overscrollBehavior = "none";
+    document.body.style.overscrollBehavior = "none";
+  }
+
+  function unlockScroll() {
+    if (!locked) return;
+    locked = false;
+    done = true;
+
+    document.documentElement.style.overscrollBehavior = "";
+    document.body.style.overscrollBehavior = "";
+
+    unlockPage();
+  }
+
+  function consumeDelta(deltaPx) {
+    if (done) return;
+
+    accPx = clamp(accPx + deltaPx, 0, DRAW_SCROLL_PX);
+    drawP = clamp(accPx / DRAW_SCROLL_PX, 0, 1);
+
+    if (!raf) raf = requestAnimationFrame(update);
+
+    if (drawP >= 1) {
+      unlockScroll();
+    }
+  }
+
+  function onWheel(e) {
+    if (done) return;
+    if (!heroVisible()) return;
+
+    if (!locked) lockScroll();
+    e.preventDefault();
+    consumeDelta(e.deltaY);
+  }
+
+  function onTouchStart(e) {
+    if (done) return;
+    if (!heroVisible()) return;
+
+    if (!locked) lockScroll();
+    touchY = e.touches?.[0]?.clientY ?? null;
+  }
+
+  function onTouchMove(e) {
+    if (!locked) return;
+    if (done) return;
+    if (!heroVisible()) return;
+    if (!locked) lockScroll();
+
+    const y = e.touches?.[0]?.clientY ?? null;
+    if (touchY == null || y == null) return;
+
+    const delta = touchY - y; // свайп вверх => положительный delta
+    touchY = y;
+
+    e.preventDefault();
+    consumeDelta(delta);
+  }
+
+  function onTouchEnd() {
+    touchY = null;
+  }
+
+  function heroVisible() {
     const rect = hero.getBoundingClientRect();
     const vh = window.innerHeight || 800;
-
-    // когда hero полностью “пройден” (вышел вверх) -> 1
-    // когда hero ещё не начался -> 0
-    const total = rect.height + vh;
-    const passed = vh - rect.top; // сколько “прошло” от момента, когда top вошёл снизу
-    const p = total > 0 ? passed / total : 1;
-
-    // чтобы было видно сразу при загрузке (если hero в видимости)
-    const visible = rect.bottom > 0 && rect.top < vh;
-    const BASE = visible ? 0.18 : 0;
-
-    return clamp(Math.max(BASE, p), 0, 1);
+    return rect.bottom > 0 && rect.top < vh;
   }
 
   function update() {
     raf = 0;
-    const p = getHeroProgress();
-    drawPartial(totalLength * p);
+    drawPartial(totalLength * drawP);
   }
 
   function onScroll() {
-    if (raf) return;
-    raf = requestAnimationFrame(update);
+    if (!done && heroVisible()) {
+      lockScroll();
+      // важно: тут не надо считать прогресс от scrollY
+      // прогресс будет идти от wheel/touchmove (consumeDelta)
+    }
   }
+
+  window.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("touchstart", onTouchStart, { passive: false });
+  window.addEventListener("touchmove", onTouchMove, { passive: false });
+  window.addEventListener("touchend", onTouchEnd, { passive: true });
 
   function resizeToHero() {
     dpr = window.devicePixelRatio || 1;
@@ -781,33 +684,59 @@ function setupCanvasMobileHero() {
     w = Math.max(1, Math.round(r.width));
     h = Math.max(1, Math.round(r.height));
 
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
+    const pad = 12; // 8-16px
+    canvas.width = Math.round((w + pad * 2) * dpr);
+    canvas.height = Math.round((h + pad * 2) * dpr);
     canvas.style.width = w + "px";
     canvas.style.height = h + "px";
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.translate(pad, pad);
 
-    // Внимание: после поворота рисуем в координатах (H x W),
-    // поэтому путь строим как будто “вертикально” в (h,w)
     buildPathPoints(h, w);
 
     update();
+    drawP = 0;
+    accPx = 0;
+    done = false;
+    locked = false;
+    drawPartial(0);
   }
 
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", resizeToHero);
 
   resizeToHero();
-  requestAnimationFrame(update);
+
 
   return () => {
+    window.removeEventListener("wheel", onWheel);
+    window.removeEventListener("touchstart", onTouchStart);
+    window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("touchend", onTouchEnd);
     window.removeEventListener("scroll", onScroll);
     window.removeEventListener("resize", resizeToHero);
+    unlockScroll();
     if (raf) cancelAnimationFrame(raf);
+
   };
 }
 
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+function forceTop() {
+  // два раза — чтобы перекрыть восстановление браузером после layout
+  window.scrollTo(0, 0);
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+}
+
+window.addEventListener("load", forceTop);
+window.addEventListener("pageshow", (e) => {
+  // особенно важно для bfcache (Safari/iOS)
+  if (e.persisted) forceTop();
+});
 
 // ===== init =====
 startCountdownAll();

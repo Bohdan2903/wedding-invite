@@ -48,10 +48,6 @@ body {
     font-style: italic;
     line-height: 1.45;
     letter-spacing: .01em;
-    font-size: 16px;
-    @media screen and (min-width: 860px) {
-        font-size: 20px;
-    }
 }
 
 input, select, textarea, button, .nav, .brand, .kicker, .cd-lbl, .lead, .muted, label {
@@ -81,14 +77,6 @@ a {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
 }
-
-@media (max-width: 860px) {
-    .grid-2 {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* --- Typography --- */
 .brand,
 .hero-title .subkicker,
 .names,
@@ -207,11 +195,11 @@ h1, h2 {
 
 /* --- Hero --- */
 .hero {
-    min-height: 100vh;
+    min-height: 80vh;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 46px 0 0;
+    padding: 46px 0;
     position: relative;
 }
 
@@ -224,9 +212,6 @@ h1, h2 {
     justify-items: center;
     text-align: center;
     margin-bottom: 100px;
-    @media (max-width: 1100px) {
-        padding: 8px 0 40px;
-    }
 }
 
 .date-stack {
@@ -280,6 +265,7 @@ h1, h2 {
     width: max-content;
     will-change: transform;
     animation: marquee 30s linear infinite;
+    transform: translateZ(0);
 }
 
 .marquee-track {
@@ -288,6 +274,7 @@ h1, h2 {
     white-space: nowrap;
     opacity: .9;
     letter-spacing: .08em;
+    font-family: var(--font-ui);
     text-transform: uppercase;
     font-size: 14px;
     padding-right: 42px; /* чтобы стык был незаметен */
@@ -969,12 +956,13 @@ input:focus, select:focus, textarea:focus {
 
 .canvas--mobile {
     position: absolute;
-    top: 75%;
+    top: 67%;
     left: 0;
     right: 0;
     pointer-events: none;
     z-index: 0;
-    transform: rotate(-8deg) translateX(8%);
+    overflow: visible;
+    transform: translateX(11vw) rotate(-10deg) scale(1.1);
 }
 
 /* Desktop canvases (fixed) — как у тебя сейчас */
@@ -991,17 +979,6 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Переключение по ширине */
-@media (min-width: 1200px) {
-    .canvas--mobile {
-        display: none;
-    }
-}
-
-@media (max-width: 1199.98px) {
-    .canvas:not(.canvas--mobile) {
-        display: none;
-    }
-}
 
 .bouquet {
     position: absolute;
@@ -1013,9 +990,9 @@ input:focus, select:focus, textarea:focus {
     opacity: 0;
 
     /* "цветы" из радиальных градиентов */
-    background: radial-gradient(circle at 30% 30%, rgba(201, 139, 147, .55), transparent 55%),
-    radial-gradient(circle at 70% 35%, rgba(138, 167, 198, .55), transparent 58%),
-    radial-gradient(circle at 55% 75%, rgba(168, 183, 163, .50), transparent 60%),
+    background: radial-gradient(circle at 30% 30%, rgba(var(--accent-rgb), .55), transparent 55%),
+    radial-gradient(circle at 70% 35%, rgba(var(--accent2-rgb), .55), transparent 58%),
+    radial-gradient(circle at 55% 75%, rgba(var(--accent3-rgb), .50), transparent 60%),
     radial-gradient(circle at 25% 70%, rgba(255, 255, 255, .35), transparent 55%);
     border-radius: 50%;
 }
@@ -1039,7 +1016,54 @@ input:focus, select:focus, textarea:focus {
     transform: translate3d(0, 0, 0) scale(1);
 }
 
+/* --- Media Queries --- */
+
+@media (max-width: 1199.98px) {
+    .canvas:not(.canvas--mobile) {
+        display: none;
+    }
+
+    html, body {
+        overscroll-behavior: none;
+    }
+
+    #top {
+        touch-action: pan-y;
+    }
+}
+
+@media (min-width: 1200px) {
+    .canvas--mobile {
+        display: none;
+    }
+}
+
+@media (min-width: 600px) and (max-width: 1199.98px) {
+    .canvas--mobile {
+        transform: translateX(2vw) rotate(-10deg) scale(1.1);
+        top: 55%;
+    }
+}
+
+@media (max-width: 1100px) {
+    .hero-inner {
+        padding: 8px 0 40px;
+    }
+}
+
 @media (max-width: 860px) {
+    body {
+        font-size: 16px;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .cta {
+        padding-bottom: 100px;
+    }
+
     .bouquet {
         width: 100px;
         height: 100px;
@@ -1056,6 +1080,10 @@ input:focus, select:focus, textarea:focus {
         bottom: 30%;
         transform: translate3d(18px, 12px, 0) scale(.95);
     }
-
 }
 
+@media screen and (min-width: 860.01px) {
+    body {
+        font-size: 20px;
+    }
+}
