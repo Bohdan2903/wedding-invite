@@ -331,7 +331,7 @@ h3 {
 
 /* --- Hero --- */
 .hero {
-    min-height: 88svh;
+    min-height: 98dvh;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
