@@ -5,6 +5,8 @@
 	<meta name="viewport" content="width=device-width,initial-scale=1"/>
 	<title>Катя+Богдан - 20.06.2026</title>
 	<meta name="description" content="Свадебное приглашение: Катя + Богдан — 20.06.2026"/>
+	<link rel="icon" type="image/svg+xml" href="./favicon.svg"/>
+	<link rel="shortcut icon" href="./favicon.svg"/>
 	
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,6 +17,17 @@
 	<link rel="stylesheet" href="./index.css"/>
 </head>
 <body>
+	<header class="site-nav" id="siteNav">
+		<div class="container site-nav__inner">
+			<a class="site-nav__brand" href="#top" aria-label="К началу страницы">Катя &amp; Богдан</a>
+			<nav class="site-nav__links" aria-label="Навигация по приглашению">
+				<a href="#invite">Приглашение</a>
+				<a href="#details">Тайминг</a>
+				<a href="#location">Локация</a>
+				<a href="#confirmation">RSVP</a>
+			</nav>
+		</div>
+	</header>
 	
 	<main>
 		<!-- HERO -->
@@ -39,7 +52,10 @@
 					<h1 class="names">Катя <span class="amp">&amp;</span> Богдан</h1>
 				</div>
 				
-				<a class="cta" href="#invite">Открыть приглашение</a>
+				<div class="hero-actions">
+					<a class="cta cta--primary" href="#confirmation">Подтвердить присутствие</a>
+					<a class="cta-link" href="#location">Смотреть локацию</a>
+				</div>
 			</div>
 			
 			<canvas class="canvas canvas--mobile"></canvas>
@@ -95,6 +111,68 @@
 				<div class="calendar" id="calendar" data-reveal data-anim="fade-up" data-delay="400"></div>
 				
 				<div class="year-title" data-reveal data-anim="fade-up" data-delay="500">2026</div>
+			</div>
+		</section>
+		
+		<!-- PHOTO GALLERY -->
+		<section class="section section--gallery parallax-section" id="gallery" data-parallax="0.14">
+			<div class="container" style="text-align:center">
+				<h2 data-reveal data-anim="fade-up">Наша фотосессия</h2>
+				<p class="lead" data-reveal data-anim="fade-up" data-delay="80">
+					Добавили моковые кадры для настроения. Позже их можно заменить на ваши финальные фотографии.
+				</p>
+				
+				<div class="photo-grid">
+					<figure class="photo-card photo-card--wide" data-reveal data-anim="fade-up" data-delay="120">
+						<img class="js-gallery-image"
+							  src="https://unsplash.com/photos/bLwoDCt_D5E/download?force=true&amp;w=1600"
+							  alt="Пара на природе в джинсах и светлой одежде"
+							  loading="lazy"
+							  decoding="async"
+						/>
+						<figcaption>Casual look: джинсы + белые футболки</figcaption>
+					</figure>
+					
+					<figure class="photo-card is-bw" data-reveal data-anim="fade-up" data-delay="180">
+						<img class="js-gallery-image"
+							  src="https://unsplash.com/photos/EzMl5pPjsWk/download?force=true&amp;w=1200"
+							  alt="Романтичный портрет пары в чёрно-белом стиле"
+							  loading="lazy"
+							  decoding="async"
+						/>
+						<figcaption>Чёрно-белая серия</figcaption>
+					</figure>
+					
+					<figure class="photo-card" data-reveal data-anim="fade-up" data-delay="240">
+						<img class="js-gallery-image"
+							  src="https://unsplash.com/photos/T2qG21sd6LA/download?force=true&amp;w=1200"
+							  alt="Пара в городском casual-образе"
+							  loading="lazy"
+							  decoding="async"
+						/>
+						<figcaption>Городская прогулка</figcaption>
+					</figure>
+					
+					<figure class="photo-card photo-card--tall" data-reveal data-anim="fade-up" data-delay="300">
+						<img class="js-gallery-image"
+							  src="https://unsplash.com/photos/spLJlZZuIws/download?force=true&amp;w=1200"
+							  alt="Портрет в белой футболке и джинсах"
+							  loading="lazy"
+							  decoding="async"
+						/>
+						<figcaption>Лёгкий lifestyle-кадр</figcaption>
+					</figure>
+					
+					<figure class="photo-card is-bw" data-reveal data-anim="fade-up" data-delay="360">
+						<img class="js-gallery-image"
+							  src="https://unsplash.com/photos/_-ynZTGWz-M/download?force=true&amp;w=1200"
+							  alt="Кадр в минималистичном стиле с denim-образом"
+							  loading="lazy"
+							  decoding="async"
+						/>
+						<figcaption>Минимализм и детали</figcaption>
+					</figure>
+				</div>
 			</div>
 		</section>
 		
@@ -168,6 +246,24 @@
 						<div class="swatch sw1" title="Бежевый"></div>
 						<div class="swatch sw2" title="Коричневый"></div>
 						<div class="swatch sw3" title="Чёрный"></div>
+					</div>
+				</div>
+			</div>
+		</section>
+		
+		<!-- PHOTO BANNER -->
+		<section class="section section--photo-banner parallax-section" data-parallax="0.10">
+			<div class="container">
+				<div class="photo-banner" data-reveal data-anim="zoom-in">
+					<img
+						  src="https://unsplash.com/photos/bLwoDCt_D5E/download?force=true&amp;w=2200"
+						  alt="Пара во время совместной прогулки"
+						  loading="lazy"
+						  decoding="async"
+					/>
+					<div class="photo-banner__overlay">
+						<div class="photo-banner__kicker">Наш день про близость и тепло</div>
+						<p>Сохранили фоновый фотоблок между секциями, чтобы визуально связать тайминг, локацию и RSVP.</p>
 					</div>
 				</div>
 			</div>
@@ -302,6 +398,7 @@
 						<div class="rsvp-actions" data-reveal data-anim="fade-up" data-delay="700">
 							<button type="submit" class="form-submit-btn">Отправить ответ</button>
 						</div>
+						<div class="rsvp-feedback" id="rsvpStatus" aria-live="polite"></div>
 					</form>
 				</div>
 			</div>
@@ -314,6 +411,22 @@
 	
 	
 	</main>
+	<div class="lightbox" id="lightbox" hidden aria-hidden="true">
+		<div class="lightbox__backdrop" data-lb-close></div>
+		<div class="lightbox__dialog" role="dialog" aria-modal="true" aria-label="Просмотр фотографий">
+			<button class="lightbox__close" type="button" data-lb-close aria-label="Закрыть">✕</button>
+			<button class="lightbox__nav lightbox__nav--prev" type="button" data-lb-prev aria-label="Предыдущее фото">
+				‹
+			</button>
+			<figure class="lightbox__figure">
+				<img id="lightboxImage" src="" alt=""/>
+				<figcaption class="lightbox__caption" id="lightboxCaption"></figcaption>
+			</figure>
+			<button class="lightbox__nav lightbox__nav--next" type="button" data-lb-next aria-label="Следующее фото">
+				›
+			</button>
+		</div>
+	</div>
 	
 	<script src="./script.js"></script>
 </body>

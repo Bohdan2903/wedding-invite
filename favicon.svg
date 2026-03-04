@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Favicon wedding invite">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6f1ea"/>
+      <stop offset="100%" stop-color="#efe2d4"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bg)"/>
+  <rect x="2.5" y="2.5" width="59" height="59" rx="15.5" fill="none" stroke="#1c1c1c" stroke-opacity=".18"/>
+
+  <circle cx="25.5" cy="34" r="11.5" fill="none" stroke="#c98b93" stroke-width="3.4"/>
+  <circle cx="38.5" cy="34" r="11.5" fill="none" stroke="#8aa7c6" stroke-width="3.4"/>
+
+  <path
+    d="M32 39.5c-3.8-2.5-6-4.8-6-7.4 0-1.9 1.4-3.3 3.2-3.3 1.2 0 2.3.6 2.8 1.6.5-1 1.6-1.6 2.8-1.6 1.8 0 3.2 1.4 3.2 3.3 0 2.6-2.2 4.9-6 7.4z"
+    fill="#a2747b"
+  />
+
+  <path d="M49 15l1.1 2.9L53 19l-2.9 1.1L49 23l-1.1-2.9L45 19l2.9-1.1z" fill="#a8b7a3"/>
+</svg>
