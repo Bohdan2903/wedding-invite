@@ -800,16 +800,28 @@ h3 {
     box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
 }
 
-.swatch.sw1 {
-    background: rgba(var(--accent-rgb), .28);
+.sw1 {
+    background: #efe5b8;
 }
 
-.swatch.sw2 {
-    background: rgba(var(--accent2-rgb), .30);
+.sw2 {
+    background: #edcfc4;
 }
 
-.swatch.sw3 {
-    background: rgba(var(--accent3-rgb), .34);
+.sw3 {
+    background: #d6a8cc;
+}
+
+.sw4 {
+    background: #bbaed9;
+}
+
+.sw5 {
+    background: #90b3da;
+}
+
+.sw6 {
+    background: #c2d4b6;
 }
 
 /* --- Forms & Cards --- */
