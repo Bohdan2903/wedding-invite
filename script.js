@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 const WEDDING_DATE_ISO = "2026-06-20T17:00:00";
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYbtVjtBXhuInQzqzqt-wXs0R424LhNgs1y9D_Fefuz0VZd8qIUQtyCcb_2HuPfTrS/exec"
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx_05Q7dhmUf7OWXGqFeSBtA7bfPNTjgWgrJalzVeTOZLccK3CvwtXV0oJr_kJ8bl7z/exec"
 
 const pad2 = (n) => String(n).padStart(2, "0");
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
