@@ -70,7 +70,7 @@ section[id] {
     scroll-margin-top: var(--anchor-offset);
 }
 
-input, select, textarea, button, .nav, .brand, .kicker, .cd-lbl, .lead, .muted, label {
+input, select, textarea, button, .nav, .brand, .kicker, .cd-lbl, .lead, .muted, label  {
     font-family: var(--font-ui);
     font-style: normal;
     letter-spacing: .02em;
@@ -242,13 +242,15 @@ h3 {
     border-bottom-color: rgba(244, 244, 244, .5);
 }
 
-.cta, .count-cta__btn, button {
+.cta, .count-cta__btn, button , .rsvp-actions button, .map-btn{
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     letter-spacing: .06em;
     text-transform: uppercase;
+    font-size: 16px;
+    font-family: var(--font-text);
     transition: transform .18s ease, filter .18s ease, box-shadow .18s ease, background-color .18s ease;
 }
 
@@ -1106,16 +1108,7 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
     margin-top: 8px;
 }
 
-.rsvp-actions button {
-    width: min(520px, 100%);
-    min-height: 48px;
-    border-radius: var(--radius-pill);
-    background: var(--fg);
-    color: var(--bg);
-    border: 1px solid rgba(var(--fg-rgb), .14);
-    transition: all 0.3s;
-    box-shadow: var(--shadow-cta);
-}
+
 
 .rsvp-actions button:disabled {
     opacity: 0.8;
@@ -1179,10 +1172,10 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
     border-radius: var(--radius-pill);
     background: var(--fg);
     color: var(--bg);
-    font-family: var(--font-ui);
     font-style: normal;
     font-weight: 600;
     letter-spacing: .06em;
+    margin-Top: 14px;
     text-transform: uppercase;
     border: 1px solid rgba(var(--fg-rgb), .14);
     box-shadow: var(--shadow-cta);
