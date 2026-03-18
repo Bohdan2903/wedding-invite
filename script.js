@@ -691,7 +691,7 @@ function setupCanvasDesktop() {
   };
 }
 
-/* ===== MOBILE: canvas только в HERO, рисуем "сразу", когда HERO видим ===== */
+/* ===== MOBILE: canvas only in HERO, autoplay on page entry ===== */
 function setupCanvasMobileHero() {
   const canvas = document.querySelector("canvas.canvas--mobile");
   const hero = document.getElementById("top");
@@ -705,17 +705,28 @@ function setupCanvasMobileHero() {
   let totalLength = 0;
 
   let raf = 0;
+  let delayTimer = 0;
   let w = 1, h = 1;
   let dpr = 1;
-  let drawP = 0;        // 0..1 прогресс дорисовки
-  let done = false;     // дорисовано ли
-  let locked = false;   // сейчас блокируем скролл
-  let accPx = 0;        // накопленные "пиксели" жеста
-  let touchY = null;
-  let savedScrollY = 0;
-  let lastDrawP = -1;
+  let drawP = 0;
+  let animationStarted = false;
+  let animationDone = false;
+  let animationStartTs = 0;
+  let bleedX = 0;
+  let bleedY = 0;
 
-  const DRAW_SCROLL_PX = Math.max(360, Math.round(window.innerHeight * 0.62));
+  const START_DELAY_MS = 600;
+  const DRAW_DURATION_MS = 1400;
+  const MOBILE_CANVAS_TILT = -8 * Math.PI / 180;
+  const MOBILE_CANVAS_WIDTH_TRIM = 12;
+
+  function getMobileCanvasVisuals() {
+    const isTablet = window.innerWidth >= 600;
+    return {
+      scale: isTablet ? 1.15 : 1.12,
+      shiftX: isTablet ? window.innerWidth * 0.02 : window.innerHeight * 0.05,
+    };
+  }
 
   function cubicBezier(p0, p1, p2, p3, t) {
     const mt = 1 - t;
@@ -729,7 +740,6 @@ function setupCanvasMobileHero() {
   function reflect(p, c) { return { x: 2 * p.x - c.x, y: 2 * p.y - c.y }; }
 
   function buildPathPoints(W, H) {
-    // строим ПОД “вертикальный” путь (как раньше), но потом повернём ctx
     const s = Math.min(W, H);
 
     const rightExit = s * 0.2;
@@ -788,20 +798,25 @@ function setupCanvasMobileHero() {
   }
 
   function drawPartial(targetLen) {
-    ctx.clearRect(0, 0, w + 24, h + 24);
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     if (!points.length) return;
 
     ctx.save();
+    const { scale } = getMobileCanvasVisuals();
 
+    ctx.translate(bleedX, bleedY);
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(MOBILE_CANVAS_TILT);
+    ctx.scale(scale, scale);
+    ctx.translate(-w / 2, -h / 2);
     ctx.translate(0, h);
     ctx.rotate(-Math.PI / 2);
 
-    // ⚠️ padding чтобы stroke не резался
-    const pad = Math.ceil((ctx.lineWidth || 4) * 2.5); // под 3-4px хватает
+    const pad = Math.ceil((ctx.lineWidth || 4) * 2.5);
     ctx.translate(pad, pad);
 
     ctx.strokeStyle = "rgba(200, 183, 165, 0.75)";
-    ctx.lineWidth = 4;               // можно 3-4
+    ctx.lineWidth = 4;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -823,177 +838,85 @@ function setupCanvasMobileHero() {
         break;
       }
     }
-    ctx.stroke();
 
+    ctx.stroke();
     ctx.restore();
   }
 
-
-  function lockPage() {
-    if (locked || done) return;
-    savedScrollY = window.scrollY || window.pageYOffset || 0;
-
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${savedScrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
-  }
-
-  function unlockPage() {
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    document.body.style.width = "";
-
-    window.scrollTo(0, savedScrollY);
-  }
-
-
-  function lockScroll() {
-    if (locked || done) return;
-    locked = true;
-
-    lockPage();
-
-    document.documentElement.style.overscrollBehavior = "none";
-    document.body.style.overscrollBehavior = "none";
-  }
-
-  function unlockScroll() {
-    if (!locked) return;
-    locked = false;
-    done = true;
-
-    document.documentElement.style.overscrollBehavior = "";
-    document.body.style.overscrollBehavior = "";
-
-    unlockPage();
-  }
-
-  function consumeDelta(deltaPx) {
-    if (done) return;
-    const positiveDelta = Math.max(0, deltaPx);
-    if (!positiveDelta) return;
-
-    accPx = clamp(accPx + positiveDelta, 0, DRAW_SCROLL_PX);
-    drawP = clamp(accPx / DRAW_SCROLL_PX, 0, 1);
-
-    if (Math.abs(drawP - lastDrawP) > 0.003 && !raf) {
-      raf = requestAnimationFrame(update);
-    }
-
-    if (drawP >= 1) {
-      unlockScroll();
-    }
-  }
-
-  function onWheel(e) {
-    if (done) return;
-    if (!heroVisible()) return;
-
-    if (!locked) lockScroll();
-    e.preventDefault();
-    consumeDelta(e.deltaY);
-  }
-
-  function onTouchStart(e) {
-    if (done) return;
-    if (!heroVisible()) return;
-
-    if (!locked) lockScroll();
-    touchY = e.touches?.[0]?.clientY ?? null;
-  }
-
-  function onTouchMove(e) {
-    if (!locked) return;
-    if (done) return;
-    if (!heroVisible()) return;
-    if (!locked) lockScroll();
-
-    const y = e.touches?.[0]?.clientY ?? null;
-    if (touchY == null || y == null) return;
-
-    const delta = touchY - y; // свайп вверх => положительный delta
-    touchY = y;
-
-    e.preventDefault();
-    consumeDelta(delta);
-  }
-
-  function onTouchEnd() {
-    touchY = null;
-  }
-
-  function heroVisible() {
-    const rect = hero.getBoundingClientRect();
-    const vh = window.innerHeight || 800;
-    return rect.bottom > 0 && rect.top < vh;
-  }
-
-  function update() {
-    raf = 0;
-    lastDrawP = drawP;
+  function renderCurrentFrame() {
     drawPartial(totalLength * drawP);
   }
 
-  function onScroll() {
-    if (!done && heroVisible()) {
-      lockScroll();
-      // важно: тут не надо считать прогресс от scrollY
-      // прогресс будет идти от wheel/touchmove (consumeDelta)
+  function animateDraw(ts) {
+    if (!animationStartTs) animationStartTs = ts;
+
+    drawP = clamp((ts - animationStartTs) / DRAW_DURATION_MS, 0, 1);
+    renderCurrentFrame();
+
+    if (drawP >= 1) {
+      raf = 0;
+      animationDone = true;
+      return;
     }
+
+    raf = requestAnimationFrame(animateDraw);
   }
 
-  window.addEventListener("wheel", onWheel, { passive: false });
-  window.addEventListener("touchstart", onTouchStart, { passive: false });
-  window.addEventListener("touchmove", onTouchMove, { passive: false });
-  window.addEventListener("touchend", onTouchEnd, { passive: true });
+  function startAnimation() {
+    if (animationStarted) return;
+    animationStarted = true;
+
+    delayTimer = window.setTimeout(() => {
+      delayTimer = 0;
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        drawP = 1;
+        animationDone = true;
+        renderCurrentFrame();
+        return;
+      }
+
+      if (animationDone) return;
+      animationStartTs = 0;
+      raf = requestAnimationFrame(animateDraw);
+    }, START_DELAY_MS);
+  }
 
   function resizeToHero() {
     dpr = window.devicePixelRatio || 1;
     const r = hero.getBoundingClientRect();
-    const extraCanvasWidth = 24;
-    w = Math.max(1, Math.round(window.innerWidth + extraCanvasWidth));
+    const { scale, shiftX } = getMobileCanvasVisuals();
+    const cos = Math.cos(MOBILE_CANVAS_TILT);
+    const sin = Math.sin(MOBILE_CANVAS_TILT);
+
+    w = Math.max(1, Math.round(window.innerWidth - MOBILE_CANVAS_WIDTH_TRIM));
     h = Math.max(1, Math.round(r.height));
 
-    const pad = 12; // 8-16px
-    canvas.width = Math.round((w + pad * 2) * dpr);
-    canvas.height = Math.round((h + pad * 2) * dpr);
-    canvas.style.width = w + "px";
-    canvas.style.height = h + "px";
-    canvas.style.left = `${-extraCanvasWidth / 2}px`;
+    const rotatedW = scale * (Math.abs(w * cos) + Math.abs(h * sin));
+    const rotatedH = scale * (Math.abs(w * sin) + Math.abs(h * cos));
+    bleedX = Math.max(32, Math.ceil((rotatedW - w) / 2) + 16);
+    bleedY = Math.max(32, Math.ceil((rotatedH - h) / 2) + 16);
+
+    canvas.width = Math.round((w + bleedX * 2) * dpr);
+    canvas.height = Math.round((h + bleedY * 2) * dpr);
+    canvas.style.width = `${w + bleedX * 2}px`;
+    canvas.style.height = `${h + bleedY * 2}px`;
+    canvas.style.left = `${Math.round(shiftX - bleedX)}px`;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
     buildPathPoints(h, w);
-
-    update();
-    drawP = 0;
-    lastDrawP = -1;
-    accPx = 0;
-    done = false;
-    locked = false;
-    drawPartial(0);
+    renderCurrentFrame();
   }
 
-  window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", resizeToHero);
 
   resizeToHero();
-
+  startAnimation();
 
   return () => {
-    window.removeEventListener("wheel", onWheel);
-    window.removeEventListener("touchstart", onTouchStart);
-    window.removeEventListener("touchmove", onTouchMove);
-    window.removeEventListener("touchend", onTouchEnd);
-    window.removeEventListener("scroll", onScroll);
     window.removeEventListener("resize", resizeToHero);
-    unlockScroll();
+    if (delayTimer) clearTimeout(delayTimer);
     if (raf) cancelAnimationFrame(raf);
-
   };
 }
 

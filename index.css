@@ -283,9 +283,12 @@ h3 {
 }
 
 .hero-actions {
-    display: grid;
+    display: flex;
     justify-items: center;
-    gap: 10px;
+    align-items: center;
+    gap: 16px;
+    flex-direction: column;
+    margin-top:24px;
     margin-bottom: var(--space-3);
 }
 
@@ -331,7 +334,7 @@ h3 {
 
 /* --- Hero --- */
 .hero {
-    min-height: 98dvh;
+    min-height: 110dvh;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -345,20 +348,26 @@ h3 {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: .16;
+    opacity: .35;
     background: linear-gradient(180deg, rgba(246, 241, 234, .1), rgba(246, 241, 234, .72)),
-    url("https://unsplash.com/photos/bLwoDCt_D5E/download?force=true&w=2200") center 30% / cover no-repeat;
+    url("https://cdn.pixover.com/galleries/69b29920e94fbfd99ad39183/69b29920e94fbfd99ad39185/large_1773312711909_H67A7593.jpg") center 29% / cover no-repeat;
+
+    @media (max-width: 1199.98px) {
+        background-position: center center;
+    }
+
 }
 
 .hero-inner {
     width: min(1100px, 92vw);
     margin: 0 auto;
-    padding: 50px 0 22px;
+    padding: 22px 0;
     display: grid;
-    gap: 32px;
+    gap: 24px;
     justify-items: center;
     text-align: center;
-    margin-bottom: 100px;
+    min-height: 95dvh;
+
 }
 
 .date-stack {
@@ -505,7 +514,7 @@ h3 {
     top: 50%;
     width: 44px;
     height: 40px;
-    transform: translate(-50%, -52%);
+    transform: translate(-50%, -48%);
     background-repeat: no-repeat;
     background-size: contain;
     opacity: .95;
@@ -619,31 +628,18 @@ h3 {
 
 .photo-card--wide {
     grid-column: span 8;
+    max-height: 500px;
 }
 
-.photo-card--tall {
-    grid-column: span 4;
-}
 
 .photo-card img {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
-    aspect-ratio: 4 / 5;
     object-fit: cover;
+    object-position: center;
 }
 
-.photo-card--wide img {
-    aspect-ratio: 16 / 9;
-}
-
-.photo-card--tall img {
-    aspect-ratio: 3 / 4;
-}
-
-.photo-card.is-bw img {
-    filter: grayscale(1) contrast(1.06);
-}
 
 .photo-card figcaption {
     padding: 10px 12px 12px;
@@ -691,11 +687,12 @@ h3 {
 
 .photo-banner img {
     width: 100%;
-    height: 100%;
     min-height: 360px;
+    max-height: 1000px;
     object-fit: cover;
+    object-position: center;
     display: block;
-    filter: saturate(.88) contrast(1.03);
+    /*filter: saturate(.88) contrast(1.03);*/
 }
 
 .photo-banner__overlay {
@@ -1296,12 +1293,13 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
 
 .canvas--mobile {
     position: absolute;
-    top: 67%;
+    top: 50%;
     left: 0;
+    width: 100%;
+    max-width: none;
     pointer-events: none;
     z-index: 0;
     overflow: visible;
-    transform: translateX(11vw) rotate(-10deg) scale(1.1);
 }
 
 /* Desktop canvases (fixed) — как у тебя сейчас */
@@ -1417,7 +1415,8 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
     grid-template-columns: 56px minmax(0, 1fr) 56px;
     align-items: center;
     gap: var(--space-3);
-    width: min(1100px, 95vw);
+    width: 98vh;
+    max-width: 100%;
     margin: 0 auto;
 }
 
@@ -1431,18 +1430,14 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
 
 .lightbox__figure img {
     width: 100%;
-    max-height: min(82vh, 920px);
+    max-height: min(92vh, 920px);
     object-fit: cover;
+    object-position: center 25%;
     display: block;
 }
 
 .lightbox__caption {
-    padding: 10px 12px 12px;
-    font-family: var(--font-ui);
-    font-size: 12px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: rgba(var(--fg-rgb), .78);
+    opacity: 0;
 }
 
 .lightbox__nav,
@@ -1523,6 +1518,17 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
     #top {
         touch-action: pan-y;
     }
+
+    .hero-inner {
+        min-height: 96dvh;
+        margin-bottom: 0;
+        padding-bottom: 40px;
+    }
+
+    .hero-actions {
+        margin-top: auto;
+        margin-bottom: 80px;
+    }
 }
 
 @media (min-width: 1200px) {
@@ -1533,8 +1539,7 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
 
 @media (min-width: 600px) and (max-width: 1199.98px) {
     .canvas--mobile {
-        transform: translateX(2vw) rotate(-10deg) scale(1.1);
-        top: 55%;
+        top: 45%;
     }
 }
 
@@ -1599,10 +1604,6 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
 
     .map-embed {
         aspect-ratio: 2 / 2.8;
-    }
-
-    .hero-actions {
-        margin-bottom: 72px;
     }
 
     .photo-grid {
@@ -1679,9 +1680,27 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
         top: calc(var(--anchor-offset) + 8px);
         width: calc(100vw - 24px);
     }
+    .hero-title{
+        margin-top: -90px;
+    }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 500px) {
+    .swatches{
+        gap: 14px;
+    }
+    .swatch{
+        width: 40px;
+        height: 40px;
+    }
+    .site-nav__inner {
+        justify-content: center;
+    }
+
+    .site-nav__links {
+        display: none;
+    }
+
     .container {
         width: min(960px, calc(100vw - 24px));
     }
@@ -1694,13 +1713,18 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
         gap: 8px;
     }
 
-    .count-cta__nums .num {
-        min-width: 76px;
+    .count-cta__nums {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 18px;
     }
 
-    .count-cta__nums .num span {
-        font-size: 36px;
+
+    .count-cta__nums .sep {
+        display: none;
     }
+
+   
 }
 
 @media (prefers-reduced-motion: reduce) {
