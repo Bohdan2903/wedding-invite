@@ -368,7 +368,7 @@ h3 {
     gap: 24px;
     justify-items: center;
     text-align: center;
-    min-height: 95dvh;
+    min-height: 95vh;
 
 }
 
@@ -1513,7 +1513,6 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
     }
 
     .hero-inner {
-        min-height: 96dvh;
         margin-bottom: 0;
         padding-bottom: 40px;
     }
